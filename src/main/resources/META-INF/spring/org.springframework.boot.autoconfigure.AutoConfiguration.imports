@@ -1,0 +1,3 @@
+com.github.mehrdadfalahati.redisutils.config.RedisSerializationConfiguration
+com.github.mehrdadfalahati.redisutils.config.RedisTemplateConfiguration
+com.github.mehrdadfalahati.redisutils.config.RedisClientAutoConfiguration
