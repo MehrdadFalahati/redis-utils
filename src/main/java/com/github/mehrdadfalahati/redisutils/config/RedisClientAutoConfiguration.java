@@ -4,6 +4,7 @@ import com.github.mehrdadfalahati.redisutils.client.RedisClient;
 import com.github.mehrdadfalahati.redisutils.client.RedisConnectionManager;
 import com.github.mehrdadfalahati.redisutils.lettuce.LettuceRedisClient;
 import com.github.mehrdadfalahati.redisutils.lettuce.LettuceStringOperations;
+import com.github.mehrdadfalahati.redisutils.operations.DefaultRedisKeyOperations;
 import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
 import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
 import com.github.mehrdadfalahati.redisutils.util.RedisCommandExecutor;
@@ -42,6 +43,17 @@ public class RedisClientAutoConfiguration {
             RedisProperties properties) {
         log.info("Initializing Redis connection manager");
         return new RedisConnectionManager(connectionFactory, properties);
+    }
+
+    /**
+     * Create Redis key operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisKeyOperations redisKeyOperations(
+            org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate) {
+        log.info("Creating DefaultRedisKeyOperations");
+        return new DefaultRedisKeyOperations(redisTemplate);
     }
 
     /**

@@ -167,4 +167,10 @@ public class DefaultRedisValueOperations implements RedisValueOperations {
         Long result = redisTemplate.opsForValue().decrement(key);
         return result != null ? result : 0L;
     }
+
+    @Override
+    public long decrementBy(String key, long delta) {
+        Long result = redisTemplate.opsForValue().decrement(key, delta);
+        return result != null ? result : 0L;
+    }
 }

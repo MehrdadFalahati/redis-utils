@@ -1,5 +1,9 @@
 # Redis Utils
 
+[![Build](https://github.com/mehrdadfalahati/redis-utils/actions/workflows/build.yml/badge.svg)](https://github.com/mehrdadfalahati/redis-utils/actions/workflows/build.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://www.oracle.com/java/technologies/javase-downloads.html)
+
 A Spring Boot utility library for Redis operations with a clean, type-safe API built on top of Lettuce.
 
 ## Features
@@ -421,11 +425,56 @@ if (lockAcquired) {
 
 ## Testing
 
-### With Testcontainers
+This project has comprehensive test coverage with both unit and integration tests.
+
+### Running Tests
+
+```bash
+# Run unit tests only
+mvn test
+
+# Run integration tests only
+mvn verify -DskipTests
+
+# Run all tests (unit + integration)
+mvn verify
+```
+
+### Test Coverage
+
+- **Unit Tests** (`*Test.java`): Test individual components with mocked dependencies
+  - RedisKey value object
+  - RedisCommandExecutor retry logic
+  - LettuceRedisClient connection management
+  - Configuration classes
+  - Exception handling
+
+- **Integration Tests** (`*IT.java`): End-to-end tests with real Redis via Testcontainers
+  - RedisStringOperations - all string operations
+  - RedisKeyOperations - key management
+  - RedisClientAutoConfiguration - bean wiring
+  - Performance benchmarks
+
+### Writing Integration Tests
+
+All integration tests use Testcontainers to automatically start a Redis instance:
 
 ```java
 @SpringBootTest
-public class RedisIntegrationTest extends AbstractRedisTestContainer {
+@Testcontainers
+public class MyRedisIT {
+
+    @Container
+    private static final RedisContainer REDIS_CONTAINER =
+        new RedisContainer(DockerImageName.parse("redis:7-alpine"))
+            .withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void redisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
+        registry.add("spring.data.redis.port",
+            () -> REDIS_CONTAINER.getMappedPort(6379).toString());
+    }
 
     @Autowired
     private RedisValueOperations redisOps;
@@ -439,28 +488,16 @@ public class RedisIntegrationTest extends AbstractRedisTestContainer {
 }
 ```
 
-### Abstract Base Class
+**Requirements:**
+- Docker must be running for integration tests
+- Testcontainers will automatically download and start Redis
 
-```java
-@SpringBootTest
-public abstract class AbstractRedisTestContainer {
+**Alternative:** To use a local Redis instance instead:
+1. Remove `@Testcontainers` and `@Container` annotations
+2. Configure `application-test.yml` with your Redis connection
+3. Start Redis locally: `redis-server`
 
-    protected static final RedisContainer REDIS_CONTAINER =
-        new RedisContainer(DockerImageName.parse("redis:7-alpine"))
-            .withExposedPorts(6379);
-
-    static {
-        REDIS_CONTAINER.start();
-    }
-
-    @DynamicPropertySource
-    static void registerRedisProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
-        registry.add("spring.data.redis.port",
-            () -> REDIS_CONTAINER.getMappedPort(6379).toString());
-    }
-}
-```
+For more details, see [TESTING.md](TESTING.md).
 
 ## Architecture
 
@@ -507,10 +544,27 @@ com.github.mehrdadfalahati.redisutils
 
 ## Requirements
 
-- Java 21+
+- Java 17+ (tested on Java 17 and 21)
 - Spring Boot 3.3+
 - Lettuce 6.x (via Spring Data Redis)
 - Redis 5.0+
+
+## Building from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/mehrdadfalahati/redis-utils.git
+cd redis-utils
+
+# Build and run tests (requires Docker for integration tests)
+mvn clean verify
+
+# Build without tests
+mvn clean package -DskipTests
+
+# Install to local Maven repository
+mvn clean install
+```
 
 ## License
 

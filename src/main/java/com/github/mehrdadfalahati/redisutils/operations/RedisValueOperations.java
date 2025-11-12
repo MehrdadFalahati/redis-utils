@@ -93,4 +93,12 @@ public interface RedisValueOperations {
      * @return the value after decrement
      */
     long decrement(String key);
+
+    /**
+     * Decrement numeric value by delta.
+     * @param key the Redis key
+     * @param delta the decrement amount
+     * @return the value after decrement
+     */
+    long decrementBy(String key, long delta);
 }
