@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: redis-utils-example
+
+  # Spring Data Redis configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: your-password  # Uncomment if Redis requires authentication
+      # database: 0              # Default database
+      timeout: 5s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 10s
+
+# Redis Utils configuration
+redis:
+  client:
+    enabled: true           # Enable auto-configuration (default: true)
+    timeout: 5s             # Command timeout (default: 5s)
+    pool-enabled: true      # Enable connection pooling (default: true)
+
+    # Connection pool settings
+    pool:
+      max-total: 8          # Maximum connections (default: 8)
+      max-idle: 8           # Maximum idle connections (default: 8)
+      min-idle: 2           # Minimum idle connections (default: 2)
+      max-wait: 10s         # Max wait for connection (default: 10s)
+
+    # Retry configuration
+    retry:
+      enabled: true         # Enable retry logic (default: true)
+      max-attempts: 3       # Maximum retry attempts (default: 3)
+      initial-backoff: 100ms  # Initial delay before retry (default: 100ms)
+      max-backoff: 2s         # Maximum delay between retries (default: 2s)
+      backoff-multiplier: 2.0       # Exponential backoff multiplier (default: 2.0)
+
+    # Circuit breaker (optional)
+    circuit-breaker-enabled: false
+
+# Server configuration
+server:
+  port: 8080
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.github.mehrdadfalahati.redisutils: DEBUG
+    org.springframework.data.redis: INFO

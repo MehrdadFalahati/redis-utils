@@ -4,10 +4,14 @@ This document outlines the testing strategy and practices for the redis-utils pr
 
 ## Test Structure
 
-All tests are located in `src/test/java` and follow these naming conventions:
+All tests are located in `redis-utils-core/src/test/java` and follow these naming conventions:
 
-- **Unit Tests**: `*Test.java` (e.g., `RedisPropertiesTest.java`)
-- **Integration Tests**: `*IT.java` (e.g., `RedisStringOperationsIT.java`)
+- **Unit Tests**: `*Test.java` (e.g., `RedisKeyTest.java`, `LettuceRedisClientTest.java`)
+- **Integration Tests**: `*IT.java` (e.g., `RedisStringOperationsIT.java`, `RedisHashOperationsIT.java`)
+
+**Test Count**: 269 total tests
+- 117 unit tests (fast, no external dependencies)
+- 152 integration tests (with real Redis via Testcontainers)
 
 ## Test Categories
 
@@ -16,11 +20,13 @@ All tests are located in `src/test/java` and follow these naming conventions:
 Unit tests verify individual components in isolation with mocked dependencies.
 
 **Coverage areas:**
-- Configuration classes (property binding, bean creation)
+- Value objects (RedisKey - equality, hashcode, TTL handling) - 34 tests
+- Connection management (LettuceRedisClient with mocked connections) - 26 tests
+- Utility classes (RedisCommandExecutor - retry logic, error handling) - 19 tests
+- Serialization (JsonRedisSerializer, StringRedisSerializer, ByteArrayRedisSerializer) - 28 tests
+- Serializer registry management - 10 tests
 - Exception classes (message construction, cause wrapping)
-- Utility classes (command execution, error handling, retry logic)
-- Value objects (RedisKey, equality, hashcode)
-- Connection management logic (with mocked connections)
+- Configuration property binding
 
 **Run unit tests only:**
 ```bash
@@ -32,12 +38,18 @@ mvn test
 Integration tests use Testcontainers to spin up a real Redis instance and test end-to-end functionality.
 
 **Coverage areas:**
-- All Redis operations (string, key, value operations)
+- RedisStringOperations - 26 tests (all string/value operations)
+- RedisHashOperations - 16 tests (hash CRUD, increments)
+- RedisListOperations - 17 tests (queue/stack patterns)
+- RedisSetOperations - 17 tests (set algebra operations)
+- RedisZSetOperations - 18 tests (scored sets, leaderboards)
+- RedisKeyOperations - 27 tests (key management, TTL, expiration)
+- SerializationIntegration - 11 tests (end-to-end serialization with real Redis)
+- RedisClientAutoConfiguration - 20 tests (Spring Boot auto-configuration and bean wiring)
 - TTL and expiration behavior
-- Atomic operations
-- Serialization/deserialization
-- Connection pooling
-- Auto-configuration
+- Atomic operations and race conditions
+- JSON serialization/deserialization with Jackson
+- Connection pooling with Testcontainers
 
 **Run integration tests only:**
 ```bash

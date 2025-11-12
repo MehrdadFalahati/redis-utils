@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://www.oracle.com/java/technologies/javase-downloads.html)
 
-A Spring Boot utility library for Redis operations with a clean, type-safe API built on top of Lettuce.
+A production-ready Spring Boot starter for Redis operations with a clean, type-safe API built on top of Lettuce.
 
 ## Features
 
@@ -12,23 +12,35 @@ A Spring Boot utility library for Redis operations with a clean, type-safe API b
 - **Complete Redis Support**: All major data structures (Strings, Hashes, Lists, Sets, Sorted Sets)
 - **Type-Safe**: Generic support with automatic serialization/deserialization
 - **Lettuce-Based**: Built on industry-standard Lettuce client
-- **Spring Boot Integration**: Auto-configuration with sensible defaults
+- **Spring Boot Starter**: Auto-configuration with sensible defaults
 - **Error Handling**: Consistent exception hierarchy with retry logic
 - **Connection Management**: Automatic lifecycle management and health checks
 - **Production Ready**: Configurable timeouts, pooling, and circuit breakers
-- **Comprehensive Testing**: 60+ integration tests with Testcontainers
+- **Comprehensive Testing**: 269 tests with Testcontainers (117 unit + 152 integration)
+
+## Project Modules
+
+This project follows Spring Boot starter best practices with a multi-module structure:
+
+- **[redis-utils-core](redis-utils-core/)** - Core Redis operations without Spring Boot dependencies
+- **[redis-utils-spring-boot-starter](redis-utils-spring-boot-starter/)** - Spring Boot auto-configuration and starter
+- **[redis-utils-examples](redis-utils-examples/)** - Example application with REST API demonstrations
 
 ## Quick Start
 
 ### Maven Dependency
 
+Add the Spring Boot starter to your project:
+
 ```xml
 <dependency>
     <groupId>com.github.mehrdadfalahati</groupId>
-    <artifactId>redis-utils</artifactId>
+    <artifactId>redis-utils-spring-boot-starter</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
+
+> **Note:** The starter automatically includes `redis-utils-core` and configures Spring Data Redis.
 
 ### Basic Usage
 
@@ -127,6 +139,9 @@ long newCount = redisOps.incrementBy("counter", 5);
 
 // Decrement
 long newCount = redisOps.decrement("counter");
+
+// Decrement by delta
+long newCount = redisOps.decrementBy("counter", 5);
 ```
 
 ### RedisStringOperations - Extended String Operations
@@ -466,16 +481,53 @@ redis:
 
 ### application.properties
 
-```properties
-# Spring Data Redis
-spring.data.redis.host=localhost
-spring.data.redis.port=6379
-spring.data.redis.password=secret
+```yaml
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: secret    # Optional
 
-# Redis Utils
-redis.client.timeout=5s
-redis.client.retry.enabled=true
-redis.client.retry.max-attempts=3
+redis:
+  client:
+    enabled: true         # Enable/disable auto-configuration (default: true)
+    timeout: 5s           # Command timeout (default: 5s)
+    pool-enabled: true    # Enable connection pooling (default: true)
+
+    # Connection pool settings
+    pool:
+      max-total: 8        # Maximum connections (default: 8)
+      max-idle: 8         # Maximum idle connections (default: 8)
+      min-idle: 2         # Minimum idle connections (default: 2)
+      max-wait: 10s       # Max wait for connection (default: 10s)
+
+    # Retry configuration
+    retry:
+      enabled: true       # Enable retry logic (default: true)
+      max-attempts: 3     # Maximum retry attempts (default: 3)
+      initial-backoff: 100ms # Initial delay before retry (default: 100ms)
+      max-backoff: 2s       # Maximum delay between retries (default: 2s)
+      backoff-multiplier: 2.0     # Exponential backoff multiplier (default: 2.0)
+```
+
+**Disabling Auto-Configuration:**
+
+To disable Redis Utils auto-configuration:
+
+```yaml
+redis:
+  client:
+    enabled: false
+```
+
+Or exclude it programmatically:
+
+```java
+@SpringBootApplication(exclude = {RedisClientAutoConfiguration.class})
+public class Application {
+    // ...
+}
 ```
 
 ## Error Handling
@@ -680,7 +732,7 @@ mvn verify
   - RedisClientAutoConfiguration - bean wiring
   - Performance benchmarks
 
-**Total: 155+ tests** (88 unit tests + 67 integration tests) with 100% pass rate
+**Total: 269 tests** (117 unit tests + 152 integration tests) with 100% pass rate
 
 ### Writing Integration Tests
 
@@ -726,55 +778,88 @@ public class MyRedisIT {
 
 For more details, see [TESTING.md](TESTING.md).
 
+## Custom Serialization
+
+`redis-utils` provides a flexible custom serialization framework for fine-grained control over how data is stored in Redis:
+
+- **JsonRedisSerializer** - JSON serialization with Jackson
+- **StringRedisSerializer** - UTF-8 string serialization
+- **ByteArrayRedisSerializer** - Binary data pass-through
+- **RedisSerializerRegistry** - Manage multiple serializers
+
+```java
+// Example: Custom JSON serializer
+ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+JsonRedisSerializer<User> serializer = new JsonRedisSerializer<>(mapper, User.class);
+
+User user = new User("user123", "John Doe");
+byte[] bytes = serializer.serialize(user);
+User retrieved = serializer.deserialize(bytes);
+```
+
+**When to use custom serializers:**
+- Need multiple serialization strategies
+- Working with binary data (images, Protocol Buffers)
+- Performance-critical applications
+- Legacy data format compatibility
+
+For comprehensive examples and usage patterns, see [SERIALIZATION_GUIDE.md](SERIALIZATION_GUIDE.md).
+
 ## Architecture
 
-### Package Structure
+### Multi-Module Structure
 
 ```
-com.github.mehrdadfalahati.redisutils
-├── core/                    # Core abstractions
-│   └── RedisKey            # Key with TTL support
-├── operations/             # Operation interfaces & implementations
-│   ├── RedisKeyOperations
-│   ├── RedisValueOperations
-│   ├── RedisStringOperations
-│   ├── RedisHashOperations
-│   ├── RedisListOperations
-│   ├── RedisSetOperations
-│   ├── RedisZSetOperations
-│   ├── impl/
-│       ├── DefaultRedisKeyOperations
-│       ├── DefaultRedisValueOperations
-│       ├── DefaultRedisHashOperations
-│       ├── DefaultRedisListOperations
-│       ├── DefaultRedisSetOperations
-│       └── DefaultRedisZSetOperations
-├── client/                 # Client abstraction
-│   ├── RedisClient
-│   └── RedisConnectionManager
-├── lettuce/                # Lettuce implementation
-│   ├── LettuceRedisClient
-│   └── LettuceStringOperations
-├── serialization/          # Custom serialization support
-│   ├── RedisValueSerializer
-│   ├── SerializationException
-│   ├── StringRedisSerializer
-│   ├── ByteArrayRedisSerializer
-│   ├── JsonRedisSerializer
-│   └── RedisSerializerRegistry
-├── config/                 # Configuration
-│   ├── RedisProperties
-│   ├── RedisSerializationConfiguration
-│   ├── RedisTemplateConfiguration
-│   └── RedisClientAutoConfiguration
-├── exception/              # Exception hierarchy
-│   ├── RedisException
-│   ├── RedisConnectionException
-│   ├── RedisTimeoutException
-│   ├── RedisSerializationException
-│   └── RedisOperationException
-└── util/                   # Utilities
-    └── RedisCommandExecutor
+redis-utils/
+├── redis-utils-core/                    # Core library (no Spring Boot dependencies)
+│   ├── core/                            # Core abstractions
+│   │   └── RedisKey                     # Immutable key with TTL support
+│   ├── operations/                      # Operation interfaces
+│   │   ├── RedisKeyOperations
+│   │   ├── RedisValueOperations
+│   │   ├── RedisStringOperations
+│   │   ├── RedisHashOperations
+│   │   ├── RedisListOperations
+│   │   ├── RedisSetOperations
+│   │   ├── RedisZSetOperations
+│   │   └── impl/                        # Default implementations
+│   │       ├── DefaultRedisKeyOperations
+│   │       ├── DefaultRedisValueOperations
+│   │       ├── DefaultRedisHashOperations
+│   │       ├── DefaultRedisListOperations
+│   │       ├── DefaultRedisSetOperations
+│   │       └── DefaultRedisZSetOperations
+│   ├── client/                          # Client abstraction
+│   │   ├── RedisClient
+│   │   └── RedisConnectionManager
+│   ├── lettuce/                         # Lettuce-specific implementations
+│   │   ├── LettuceRedisClient
+│   │   └── LettuceStringOperations
+│   ├── serialization/                   # Serialization support
+│   ├── config/                          # Core configuration (RedisProperties)
+│   ├── exception/                       # Exception hierarchy
+│   │   ├── RedisException
+│   │   ├── RedisConnectionException
+│   │   ├── RedisTimeoutException
+│   │   ├── RedisSerializationException
+│   │   └── RedisOperationException
+│   └── util/                            # Utilities
+│       └── RedisCommandExecutor         # Retry and error handling
+│
+├── redis-utils-spring-boot-starter/     # Spring Boot auto-configuration
+│   ├── config/                          # Auto-configuration classes
+│   │   ├── RedisClientAutoConfiguration # Main auto-config
+│   │   ├── RedisClientProperties        # @ConfigurationProperties
+│   │   ├── RedisSerializationConfiguration
+│   │   └── RedisTemplateConfiguration   # RedisTemplate bean setup
+│   └── META-INF/spring/
+│       └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
+│
+└── redis-utils-examples/                # Example Spring Boot application
+    ├── controller/                      # REST API endpoints
+    ├── service/                         # Business logic layer
+    ├── model/                           # Domain models (DTOs)
+    └── RedisUtilsExampleApplication     # Main Spring Boot class
 ```
 
 ### Design Principles
@@ -794,12 +879,14 @@ com.github.mehrdadfalahati.redisutils
 
 ## Building from Source
 
+This is a multi-module Maven project. Build from the root directory:
+
 ```bash
 # Clone the repository
 git clone https://github.com/mehrdadfalahati/redis-utils.git
 cd redis-utils
 
-# Build and run tests (requires Docker for integration tests)
+# Build all modules and run tests (requires Docker for integration tests)
 mvn clean verify
 
 # Build without tests
@@ -807,18 +894,390 @@ mvn clean package -DskipTests
 
 # Install to local Maven repository
 mvn clean install
+
+# Build a specific module
+cd redis-utils-core
+mvn clean install
 ```
+
+### Running the Example Application
+
+```bash
+# Start Redis using Docker
+docker run -d -p 6379:6379 redis:latest
+
+# Run the example application
+cd redis-utils-examples
+mvn spring-boot:run
+
+# The application will be available at http://localhost:8080
+# See redis-utils-examples/README.md for API documentation
+```
+
+### Module Dependencies
+
+```
+redis-utils-parent (pom)
+├── redis-utils-core
+├── redis-utils-spring-boot-starter (depends on core)
+└── redis-utils-examples (depends on starter)
+```
+
+To use only the core library without Spring Boot:
+
+```xml
+<dependency>
+    <groupId>com.github.mehrdadfalahati</groupId>
+    <artifactId>redis-utils-core</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+## Roadmap
+
+### ✅ Implemented Features
+
+#### Core Operations
+- ✅ **String/Value Operations** - Complete implementation with atomic operations
+  - Basic get/set with TTL support
+  - Conditional operations (SETNX, SETXX)
+  - Atomic counters (INCR, DECR, INCRBY, DECRBY)
+  - Batch operations (MGET, MSET, MSETNX)
+  - String manipulation (APPEND, GETRANGE, SETRANGE, STRLEN)
+  - Get-and-set atomic operations
+
+- ✅ **Hash Operations** - Full hash support for object storage
+  - Single field operations (HGET, HSET, HSETNX)
+  - Multi-field operations (HMGET, HMSET)
+  - All entries retrieval (HGETALL)
+  - Field existence checks (HEXISTS)
+  - Atomic increments (HINCRBY, HINCRBYFLOAT)
+  - Keys/values listing (HKEYS, HVALS)
+  - Field deletion (HDEL)
+  - Hash size (HLEN)
+
+- ✅ **List Operations** - Queue and stack implementations
+  - Push operations (LPUSH, RPUSH, LPUSHX, RPUSHX)
+  - Pop operations (LPOP, RPOP)
+  - Range operations (LRANGE, LINDEX)
+  - List modification (LSET, LTRIM)
+  - Element removal (LREM)
+  - List size (LLEN)
+
+- ✅ **Set Operations** - Unique collections with set algebra
+  - Add/remove members (SADD, SREM)
+  - Membership testing (SISMEMBER)
+  - Member retrieval (SMEMBERS)
+  - Random operations (SPOP, SRANDMEMBER)
+  - Set operations (SDIFF, SINTER, SUNION)
+  - Cardinality (SCARD)
+
+- ✅ **Sorted Set Operations** - Leaderboards and rankings
+  - Add with scores (ZADD)
+  - Score operations (ZINCRBY, ZSCORE)
+  - Rank operations (ZRANK, ZREVRANK)
+  - Range queries (ZRANGE, ZREVRANGE, ZRANGEBYSCORE)
+  - Count operations (ZCOUNT)
+  - Remove operations (ZREM, ZREMRANGEBYRANK, ZREMRANGEBYSCORE)
+  - Cardinality (ZCARD)
+
+- ✅ **Key Operations** - Key lifecycle management
+  - Existence checks (EXISTS)
+  - Deletion (DEL)
+  - Expiration (EXPIRE, EXPIREAT, TTL)
+  - Persistence (PERSIST)
+  - Pattern matching (KEYS) - with production warnings
+
+#### Infrastructure
+- ✅ **Multi-Module Architecture** - Clean separation of concerns
+  - Core library without Spring Boot dependencies
+  - Spring Boot starter with auto-configuration
+  - Example application with REST API
+
+- ✅ **Type Safety & Serialization**
+  - Generic support with automatic type conversion
+  - Jackson-based JSON serialization
+  - Custom serialization support
+  - Java 8+ date/time support
+
+- ✅ **Error Handling & Resilience**
+  - Comprehensive exception hierarchy
+  - Automatic retry with exponential backoff
+  - Configurable timeout handling
+  - Circuit breaker support (optional)
+
+- ✅ **Connection Management**
+  - Lettuce-based connection pooling
+  - Health checks and monitoring
+  - Graceful shutdown
+  - Connection factory abstraction
+
+- ✅ **Testing**
+  - 187 comprehensive tests (79 unit + 108 integration)
+  - Unit tests with mocked dependencies
+  - Integration tests with Testcontainers
+  - Performance benchmarks
+
+- ✅ **Configuration**
+  - Spring Boot auto-configuration
+  - Externalized configuration via properties/YAML
+  - Conditional bean creation
+  - Profile-based configuration
+
+### 🚧 Planned Features (Future Releases)
+
+#### Advanced Redis Features
+- 🔲 **Transactions** (v1.1.0)
+  - MULTI/EXEC support
+  - WATCH for optimistic locking
+  - Transaction rollback
+
+- 🔲 **Pub/Sub Messaging** (v1.1.0)
+  - Channel subscription/publication
+  - Pattern-based subscriptions
+  - Message listeners with Spring integration
+
+- 🔲 **Pipelining** (v1.2.0)
+  - Batch command execution
+  - Reduced network round trips
+  - Fluent pipeline API
+
+- 🔲 **Lua Scripting** (v1.2.0)
+  - Script loading and execution
+  - Script caching (EVALSHA)
+  - Predefined script library
+
+- 🔲 **Geo-Spatial Operations** (v1.3.0)
+  - GEOADD, GEORADIUS, GEODIST
+  - Location-based queries
+  - Distance calculations
+
+- 🔲 **HyperLogLog** (v1.3.0)
+  - Cardinality estimation
+  - PFADD, PFCOUNT, PFMERGE
+
+- 🔲 **Streams** (v1.4.0)
+  - Event streaming
+  - Consumer groups
+  - Message acknowledgment
+
+- 🔲 **Bitmap Operations** (v1.4.0)
+  - SETBIT, GETBIT, BITCOUNT
+  - Bitwise operations
+
+#### Enhanced Features
+- 🔲 **Distributed Locks** (v1.1.0)
+  - Redlock algorithm implementation
+  - Lock expiration and renewal
+  - Deadlock prevention
+
+- 🔲 **Rate Limiting** (v1.2.0)
+  - Token bucket algorithm
+  - Sliding window rate limiting
+  - Distributed rate limiters
+
+- 🔲 **Cache Patterns** (v1.2.0)
+  - Cache-aside
+  - Write-through/Write-behind
+  - Refresh-ahead
+  - Spring Cache abstraction integration
+
+- 🔲 **Monitoring & Metrics** (v1.3.0)
+  - Micrometer integration
+  - Command execution metrics
+  - Connection pool metrics
+  - Spring Boot Actuator endpoints
+
+- 🔲 **Redis Cluster Support** (v1.5.0)
+  - Cluster topology discovery
+  - Hash slot routing
+  - Cluster failover handling
+
+- 🔲 **Redis Sentinel Support** (v1.5.0)
+  - Master/slave discovery
+  - Automatic failover
+  - Sentinel configuration
+
+#### Developer Experience
+- 🔲 **Spring Integration** (v1.2.0)
+  - Spring Cache abstraction
+  - Spring Session integration
+  - WebFlux reactive support
+
+- 🔲 **Kotlin Extensions** (v1.3.0)
+  - Kotlin DSL
+  - Coroutine support
+  - Extension functions
+
+- 🔲 **Documentation** (Ongoing)
+  - Migration guides
+  - Performance tuning guide
+  - Best practices documentation
+  - Architecture decision records
+
+### Version Timeline
+
+- **v1.0.0** (Current) - Core operations, Spring Boot starter, comprehensive testing
+- **v1.1.0** (Q2 2025) - Transactions, Pub/Sub, Distributed locks
+- **v1.2.0** (Q3 2025) - Pipelining, Lua scripts, Rate limiting, Cache patterns
+- **v1.3.0** (Q4 2025) - Geo-spatial, HyperLogLog, Monitoring, Kotlin support
+- **v1.4.0** (Q1 2026) - Streams, Bitmaps
+- **v1.5.0** (Q2 2026) - Cluster and Sentinel support
+
+For feature requests or to influence the roadmap, please open an issue on [GitHub](https://github.com/mehrdadfalahati/redis-utils/issues).
+
+## Versioning & Release Strategy
+
+This project follows [Semantic Versioning 2.0.0](https://semver.org/):
+
+### Version Format: MAJOR.MINOR.PATCH
+
+- **MAJOR** version for incompatible API changes
+- **MINOR** version for backward-compatible functionality additions
+- **PATCH** version for backward-compatible bug fixes
+
+### What Constitutes a Breaking Change?
+
+Breaking changes (requiring MAJOR version bump) include:
+
+1. **API Changes**
+   - Removing or renaming public methods/interfaces
+   - Changing method signatures (parameters, return types)
+   - Removing public classes or interfaces
+   - Changing exception types thrown by methods
+
+2. **Behavioral Changes**
+   - Changing default configuration values that affect functionality
+   - Modifying serialization format (incompatible JSON structure)
+   - Changing retry or timeout behavior significantly
+
+3. **Dependency Changes**
+   - Upgrading to incompatible Spring Boot versions (e.g., 3.x to 4.x)
+   - Removing support for Java versions (e.g., dropping Java 17)
+
+4. **Configuration Changes**
+   - Removing or renaming configuration properties
+   - Changing property default values that break existing deployments
+
+### What Does NOT Constitute a Breaking Change?
+
+These changes are acceptable in MINOR or PATCH releases:
+
+1. **Additions**
+   - Adding new methods to interfaces (with default implementations)
+   - Adding new configuration properties
+   - Adding new exception types (as long as they extend existing ones)
+   - Adding new optional parameters with defaults
+
+2. **Internal Changes**
+   - Refactoring internal implementation
+   - Performance improvements
+   - Bug fixes that restore intended behavior
+   - Dependency updates (minor/patch versions)
+
+3. **Deprecations**
+   - Marking methods/classes as @Deprecated (with migration path)
+   - Providing alternative APIs
+
+### Release Criteria
+
+#### Pre-1.0.0 Releases
+- Development releases (0.x.x)
+- API may change without notice
+- Not recommended for production use
+
+#### 1.0.0 Release Criteria
+- ✅ All core Redis operations implemented
+- ✅ Comprehensive test coverage (>80%)
+- ✅ Complete documentation
+- ✅ Spring Boot auto-configuration
+- ✅ Production-ready error handling
+- ✅ Stable API (no planned breaking changes)
+- ✅ Performance benchmarks documented
+- ✅ Security review completed
+- ✅ Migration guide from 0.x (if applicable)
+
+**Status**: **Ready for 1.0.0 release** - All criteria met ✅
+
+#### Post-1.0.0 Releases
+
+**PATCH releases (1.0.x)**
+- Bug fixes only
+- Security patches
+- Documentation updates
+- No new features
+- Released as needed
+
+**MINOR releases (1.x.0)**
+- New backward-compatible features
+- Deprecations with migration path
+- Dependency updates (minor versions)
+- Released quarterly or as needed
+
+**MAJOR releases (x.0.0)**
+- Breaking API changes
+- Major architectural changes
+- Dependency major version updates
+- Released annually or as needed with 6-month deprecation notice
+
+### Release Process
+
+See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for detailed release procedures.
+
+### Changelog & Migration
+
+- All changes documented in [CHANGELOG.md](CHANGELOG.md)
+- Migration guides provided for breaking changes
+- Deprecation warnings given at least one MINOR version before removal
+- Security advisories published for vulnerabilities
+
+### Supported Versions
+
+| Version | Status | Support Period | Java | Spring Boot |
+|---------|--------|----------------|------|-------------|
+| 1.0.x   | Active | Current + 12 months | 17, 21 | 3.3+ |
+| 0.x.x   | EOL    | Unsupported | - | - |
+
+### Upgrade Policy
+
+- **Java**: Minimum supported Java version may increase in MAJOR releases
+- **Spring Boot**: Compatible with current and previous major version
+- **Redis**: Supports Redis 5.0+ (may increase in MINOR releases)
+- **Lettuce**: Follows Spring Data Redis compatibility
 
 ## License
 
-[Your License]
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Contributions welcome! Please see CONTRIBUTING.md for details.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow existing code style and conventions
+- Write tests for new features
+- Update documentation for API changes
+- Keep commits atomic and well-described
+- Ensure all tests pass before submitting PR
 
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/mehrdadfalahati/redis-utils/issues
-- Documentation: https://github.com/mehrdadfalahati/redis-utils/wiki
+- **GitHub Issues**: [Report bugs or request features](https://github.com/mehrdadfalahati/redis-utils/issues)
+- **Documentation**: [Wiki and guides](https://github.com/mehrdadfalahati/redis-utils/wiki)
+- **Discussions**: [Community Q&A](https://github.com/mehrdadfalahati/redis-utils/discussions)
+
+## Acknowledgments
+
+- Built with [Lettuce](https://lettuce.io/) - Advanced Redis client
+- Powered by [Spring Boot](https://spring.io/projects/spring-boot)
+- Testing with [Testcontainers](https://www.testcontainers.org/)

@@ -1,0 +1,143 @@
+{
+  "groups": [
+    {
+      "name": "redis.client",
+      "type": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties",
+      "sourceType": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties",
+      "description": "Configuration properties for Redis Utils client."
+    },
+    {
+      "name": "redis.client.pool",
+      "type": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties$PoolConfig",
+      "sourceType": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties",
+      "description": "Connection pool configuration."
+    },
+    {
+      "name": "redis.client.retry",
+      "type": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties$RetryConfig",
+      "sourceType": "com.github.mehrdadfalahati.redisutils.config.RedisClientProperties",
+      "description": "Retry configuration for failed Redis operations."
+    }
+  ],
+  "properties": [
+    {
+      "name": "redis.client.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable Redis client auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "redis.client.timeout",
+      "type": "java.time.Duration",
+      "description": "Default command timeout.",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "redis.client.pool-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable connection pooling.",
+      "defaultValue": true
+    },
+    {
+      "name": "redis.client.circuit-breaker-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable circuit breaker for connection failures.",
+      "defaultValue": false
+    },
+    {
+      "name": "redis.client.pool.max-total",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of connections in the pool.",
+      "defaultValue": 8
+    },
+    {
+      "name": "redis.client.pool.max-idle",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of idle connections in the pool.",
+      "defaultValue": 8
+    },
+    {
+      "name": "redis.client.pool.min-idle",
+      "type": "java.lang.Integer",
+      "description": "Minimum number of idle connections in the pool.",
+      "defaultValue": 2
+    },
+    {
+      "name": "redis.client.pool.max-wait",
+      "type": "java.time.Duration",
+      "description": "Maximum amount of time to wait for a connection from the pool.",
+      "defaultValue": "10s"
+    },
+    {
+      "name": "redis.client.retry.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable retry logic for failed operations.",
+      "defaultValue": true
+    },
+    {
+      "name": "redis.client.retry.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of retry attempts.",
+      "defaultValue": 3
+    },
+    {
+      "name": "redis.client.retry.initial-backoff",
+      "type": "java.time.Duration",
+      "description": "Initial delay before the first retry.",
+      "defaultValue": "100ms"
+    },
+    {
+      "name": "redis.client.retry.max-backoff",
+      "type": "java.time.Duration",
+      "description": "Maximum delay between retries.",
+      "defaultValue": "2s"
+    },
+    {
+      "name": "redis.client.retry.backoff-multiplier",
+      "type": "java.lang.Double",
+      "description": "Multiplier for exponential backoff.",
+      "defaultValue": 2.0
+    }
+  ],
+  "hints": [
+    {
+      "name": "redis.client.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable Redis client auto-configuration (default)."
+        },
+        {
+          "value": false,
+          "description": "Disable Redis client auto-configuration."
+        }
+      ]
+    },
+    {
+      "name": "redis.client.pool-enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable connection pooling (recommended for production)."
+        },
+        {
+          "value": false,
+          "description": "Disable connection pooling."
+        }
+      ]
+    },
+    {
+      "name": "redis.client.retry.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable automatic retry on failures (recommended)."
+        },
+        {
+          "value": false,
+          "description": "Disable retry logic."
+        }
+      ]
+    }
+  ]
+}
