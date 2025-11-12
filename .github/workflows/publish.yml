@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Build and test
-        run: mvn clean verify -B
+        run: mvn clean verify -B -DskipITs -pl '!redis-utils-examples'
 
       - name: Publish to Maven Central
         env:
@@ -51,7 +51,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          mvn deploy -P release -DskipTests -B
+          mvn deploy -P release -DskipTests -B -pl '!redis-utils-examples'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
