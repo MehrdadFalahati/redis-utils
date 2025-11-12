@@ -1,7 +1,7 @@
 package com.github.mehrdadfalahati.redisutils.lettuce;
 
 import com.github.mehrdadfalahati.redisutils.core.RedisKey;
-import com.github.mehrdadfalahati.redisutils.operations.DefaultRedisValueOperations;
+import com.github.mehrdadfalahati.redisutils.operations.impl.DefaultRedisValueOperations;
 import com.github.mehrdadfalahati.redisutils.operations.RedisStringOperations;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.RedisTemplate;

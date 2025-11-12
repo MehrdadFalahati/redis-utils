@@ -9,12 +9,14 @@ A Spring Boot utility library for Redis operations with a clean, type-safe API b
 ## Features
 
 - **Clean API**: Fluent, intuitive interface for Redis operations
+- **Complete Redis Support**: All major data structures (Strings, Hashes, Lists, Sets, Sorted Sets)
 - **Type-Safe**: Generic support with automatic serialization/deserialization
 - **Lettuce-Based**: Built on industry-standard Lettuce client
 - **Spring Boot Integration**: Auto-configuration with sensible defaults
 - **Error Handling**: Consistent exception hierarchy with retry logic
 - **Connection Management**: Automatic lifecycle management and health checks
 - **Production Ready**: Configurable timeouts, pooling, and circuit breakers
+- **Comprehensive Testing**: 60+ integration tests with Testcontainers
 
 ## Quick Start
 
@@ -177,7 +179,198 @@ boolean success = keyOps.persist("key");
 Set<String> keys = keyOps.keys("user:*");
 ```
 
+### RedisHashOperations - Hash Operations
+
+Redis hashes are maps between string fields and values, perfect for representing objects.
+
+```java
+@Autowired
+private RedisHashOperations hashOps;
+
+// Store user profile
+Map<String, Object> user = Map.of(
+    "name", "John Doe",
+    "email", "john@example.com",
+    "age", 30
+);
+hashOps.putAll("user:123", user);
+
+// Get single field
+String name = hashOps.get("user:123", "name", String.class);
+Integer age = hashOps.get("user:123", "age", Integer.class);
+
+// Get multiple fields
+Map<String, String> fields = hashOps.multiGet(
+    "user:123",
+    List.of("name", "email", "age"),
+    String.class
+);
+
+// Get all entries
+Map<String, Object> allFields = hashOps.entries("user:123", Object.class);
+
+// Update single field
+hashOps.put("user:123", "age", 31);
+
+// Conditional set (only if field doesn't exist)
+boolean wasSet = hashOps.putIfAbsent("user:123", "country", "USA");
+
+// Check if field exists
+boolean hasEmail = hashOps.hasKey("user:123", "email");
+
+// Increment numeric field
+long views = hashOps.increment("post:1", "views", 1L);
+double rating = hashOps.increment("post:1", "rating", 0.5);
+
+// Get all field names
+Set<String> fieldNames = hashOps.keys("user:123");
+
+// Get all values
+List<String> values = hashOps.values("user:123", String.class);
+
+// Delete fields
+long deleted = hashOps.delete("user:123", "tempField1", "tempField2");
+
+// Get hash size
+long size = hashOps.size("user:123");
+```
+
+### RedisListOperations - List Operations
+
+Redis lists are ordered collections, ideal for queues and stacks.
+
+```java
+@Autowired
+private RedisListOperations listOps;
+
+// Push to right (append)
+listOps.rightPush("tasks", "task1", "task2", "task3");
+
+// Push to left (prepend)
+listOps.leftPush("notifications", "urgent-notification");
+
+// Pop from left (queue behavior - FIFO)
+String nextTask = listOps.leftPop("tasks", String.class);
+
+// Pop from right (stack behavior - LIFO)
+String lastItem = listOps.rightPop("stack", String.class);
+
+// Get range of elements
+List<String> firstThree = listOps.range("tasks", 0, 2, String.class);
+List<String> all = listOps.range("tasks", 0, -1, String.class);
+
+// Get element at index
+String third = listOps.index("tasks", 2, String.class);
+
+// Set element at index
+listOps.set("tasks", 2, "updated-task");
+
+// Trim list (keep only specified range)
+listOps.trim("tasks", 0, 99); // Keep first 100 elements
+
+// Remove elements
+long removed = listOps.remove("tasks", 2, "task-to-remove"); // Remove first 2 occurrences
+
+// Get list size
+long size = listOps.size("tasks");
+
+// Push only if list exists
+long length = listOps.rightPushIfPresent("existing-list", "new-item");
+```
+
+### RedisSetOperations - Set Operations
+
+Redis sets are unordered collections of unique strings.
+
+```java
+@Autowired
+private RedisSetOperations setOps;
+
+// Add members
+setOps.add("tags", "java", "spring", "redis");
+
+// Check membership
+boolean hasJava = setOps.isMember("tags", "java");
+
+// Get all members
+Set<String> allTags = setOps.members("tags", String.class);
+
+// Remove members
+long removed = setOps.remove("tags", "redis", "deprecated-tag");
+
+// Pop random member (removes it)
+String randomTag = setOps.pop("tags", String.class);
+
+// Get random member (doesn't remove)
+String random = setOps.randomMember("tags", String.class);
+
+// Get multiple random members (may contain duplicates)
+List<String> randoms = setOps.randomMembers("tags", 5, String.class);
+
+// Get distinct random members
+Set<String> distinctRandoms = setOps.distinctRandomMembers("tags", 3, String.class);
+
+// Set operations
+Set<String> diff = setOps.difference(List.of("set1", "set2"), String.class); // set1 - set2
+Set<String> intersect = setOps.intersect(List.of("set1", "set2"), String.class); // set1 ∩ set2
+Set<String> union = setOps.union(List.of("set1", "set2"), String.class); // set1 ∪ set2
+
+// Get set size
+long size = setOps.size("tags");
+```
+
+### RedisZSetOperations - Sorted Set Operations
+
+Redis sorted sets are collections ordered by score, perfect for leaderboards and rankings.
+
+```java
+@Autowired
+private RedisZSetOperations zSetOps;
+
+// Add members with scores
+zSetOps.add("leaderboard", "player1", 1000.0);
+zSetOps.add("leaderboard", "player2", 1500.0);
+zSetOps.add("leaderboard", "player3", 2000.0);
+
+// Increment score
+double newScore = zSetOps.incrementScore("leaderboard", "player1", 100.0);
+
+// Get score of member
+Double score = zSetOps.score("leaderboard", "player2");
+
+// Get rank (0-indexed, lowest score first)
+Long rank = zSetOps.rank("leaderboard", "player1"); // Returns 0 (lowest)
+
+// Get reverse rank (highest score first)
+Long reverseRank = zSetOps.reverseRank("leaderboard", "player3"); // Returns 0 (highest)
+
+// Get range by index (ordered by score)
+Set<String> bottom3 = zSetOps.range("leaderboard", 0, 2, String.class);
+Set<String> top3 = zSetOps.reverseRange("leaderboard", 0, 2, String.class);
+
+// Get range by score
+Set<String> midRange = zSetOps.rangeByScore("leaderboard", 1000.0, 1500.0, String.class);
+Set<String> topScorers = zSetOps.reverseRangeByScore("leaderboard", 1500.0, 3000.0, String.class);
+
+// Count members in score range
+long count = zSetOps.count("leaderboard", 1000.0, 2000.0);
+
+// Remove members
+long removed = zSetOps.remove("leaderboard", "player1", "player2");
+
+// Remove by rank range
+long removedByRank = zSetOps.removeRange("leaderboard", 0, 9); // Remove bottom 10
+
+// Remove by score range
+long removedByScore = zSetOps.removeRangeByScore("leaderboard", 0.0, 100.0);
+
+// Get sorted set size
+long size = zSetOps.size("leaderboard");
+```
+
 ### RedisClient - Unified Client Interface
+
+Access all Redis operations through a single fluent interface:
 
 ```java
 @Autowired
@@ -185,12 +378,40 @@ private RedisClient redisClient;
 
 // Access operations
 RedisKeyOperations keyOps = redisClient.keyOps();
-RedisValueOperations valueOps = redisClient.valueOps();
+RedisValueOperations valueOps = redisClient.valueOps(); // or opsForValue()
+RedisHashOperations hashOps = redisClient.opsForHash();
+RedisListOperations listOps = redisClient.opsForList();
+RedisSetOperations setOps = redisClient.opsForSet();
+RedisZSetOperations zSetOps = redisClient.opsForZSet();
+
+// Example: Build a complete user session
+String userId = "user:123";
+
+// Store user data in hash
+redisClient.opsForHash().putAll(userId, Map.of(
+    "name", "John Doe",
+    "email", "john@example.com",
+    "role", "admin"
+));
+
+// Track user's recent activities in a list
+redisClient.opsForList().rightPush(userId + ":activities",
+    "login", "view-dashboard", "edit-profile");
+
+// Store user's tags in a set
+redisClient.opsForSet().add(userId + ":tags",
+    "premium", "verified", "active");
+
+// Track user's points in sorted set
+redisClient.opsForZSet().add("global-leaderboard", userId, 1500.0);
+
+// Set expiration on keys
+redisClient.keyOps().expire(userId, Duration.ofHours(24));
 
 // Health check
 boolean isHealthy = redisClient.isConnected();
 
-// Custom command (escape hatch)
+// Custom command (escape hatch for advanced use cases)
 String result = redisClient.executeCommand(commands -> {
     return commands.get("custom:key");
 });
@@ -452,8 +673,14 @@ mvn verify
 - **Integration Tests** (`*IT.java`): End-to-end tests with real Redis via Testcontainers
   - RedisStringOperations - all string operations
   - RedisKeyOperations - key management
+  - RedisHashOperations - 14 tests covering hash operations
+  - RedisListOperations - 15 tests covering list operations
+  - RedisSetOperations - 15 tests covering set operations
+  - RedisZSetOperations - 16 tests covering sorted set operations
   - RedisClientAutoConfiguration - bean wiring
   - Performance benchmarks
+
+**Total: 155+ tests** (88 unit tests + 67 integration tests) with 100% pass rate
 
 ### Writing Integration Tests
 
@@ -507,18 +734,34 @@ For more details, see [TESTING.md](TESTING.md).
 com.github.mehrdadfalahati.redisutils
 ├── core/                    # Core abstractions
 │   └── RedisKey            # Key with TTL support
-├── operations/             # Operation interfaces
+├── operations/             # Operation interfaces & implementations
 │   ├── RedisKeyOperations
 │   ├── RedisValueOperations
 │   ├── RedisStringOperations
-│   ├── DefaultRedisKeyOperations
-│   └── DefaultRedisValueOperations
+│   ├── RedisHashOperations
+│   ├── RedisListOperations
+│   ├── RedisSetOperations
+│   ├── RedisZSetOperations
+│   ├── impl/
+│       ├── DefaultRedisKeyOperations
+│       ├── DefaultRedisValueOperations
+│       ├── DefaultRedisHashOperations
+│       ├── DefaultRedisListOperations
+│       ├── DefaultRedisSetOperations
+│       └── DefaultRedisZSetOperations
 ├── client/                 # Client abstraction
 │   ├── RedisClient
 │   └── RedisConnectionManager
 ├── lettuce/                # Lettuce implementation
 │   ├── LettuceRedisClient
 │   └── LettuceStringOperations
+├── serialization/          # Custom serialization support
+│   ├── RedisValueSerializer
+│   ├── SerializationException
+│   ├── StringRedisSerializer
+│   ├── ByteArrayRedisSerializer
+│   ├── JsonRedisSerializer
+│   └── RedisSerializerRegistry
 ├── config/                 # Configuration
 │   ├── RedisProperties
 │   ├── RedisSerializationConfiguration

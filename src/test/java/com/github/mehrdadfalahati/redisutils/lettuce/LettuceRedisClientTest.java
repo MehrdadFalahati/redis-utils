@@ -2,8 +2,7 @@ package com.github.mehrdadfalahati.redisutils.lettuce;
 
 import com.github.mehrdadfalahati.redisutils.client.RedisClient;
 import com.github.mehrdadfalahati.redisutils.exception.RedisConnectionException;
-import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
-import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
+import com.github.mehrdadfalahati.redisutils.operations.*;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +29,18 @@ class LettuceRedisClientTest {
     private RedisValueOperations valueOperations;
 
     @Mock
+    private RedisHashOperations hashOperations;
+
+    @Mock
+    private RedisListOperations listOperations;
+
+    @Mock
+    private RedisSetOperations setOperations;
+
+    @Mock
+    private RedisZSetOperations zSetOperations;
+
+    @Mock
     private StatefulRedisConnection<String, Object> connection;
 
     @Mock
@@ -39,7 +50,8 @@ class LettuceRedisClientTest {
 
     @BeforeEach
     void setUp() {
-        client = new LettuceRedisClient(keyOperations, valueOperations, connection);
+        client = new LettuceRedisClient(keyOperations, valueOperations, hashOperations,
+                listOperations, setOperations, zSetOperations, connection);
     }
 
     // ========== Operations Access Tests ==========
@@ -98,7 +110,8 @@ class LettuceRedisClientTest {
     @DisplayName("Should return false when connection is null")
     void testIsConnectedNullConnection() {
         LettuceRedisClient clientWithNullConnection =
-                new LettuceRedisClient(keyOperations, valueOperations, null);
+                new LettuceRedisClient(keyOperations, valueOperations, hashOperations,
+                        listOperations, setOperations, zSetOperations, null);
 
         assertFalse(clientWithNullConnection.isConnected());
     }
@@ -178,7 +191,8 @@ class LettuceRedisClientTest {
     @DisplayName("Should not attempt to close null connection")
     void testCloseNullConnection() {
         LettuceRedisClient clientWithNullConnection =
-                new LettuceRedisClient(keyOperations, valueOperations, null);
+                new LettuceRedisClient(keyOperations, valueOperations, hashOperations,
+                        listOperations, setOperations, zSetOperations, null);
 
         assertDoesNotThrow(() -> clientWithNullConnection.close());
     }
@@ -217,7 +231,8 @@ class LettuceRedisClientTest {
     @DisplayName("Should throw exception when connection is null")
     void testExecuteCommandNullConnection() {
         LettuceRedisClient clientWithNullConnection =
-                new LettuceRedisClient(keyOperations, valueOperations, null);
+                new LettuceRedisClient(keyOperations, valueOperations, hashOperations,
+                        listOperations, setOperations, zSetOperations, null);
 
         RedisConnectionException exception = assertThrows(RedisConnectionException.class,
                 () -> clientWithNullConnection.executeCommand(commands -> "test"));

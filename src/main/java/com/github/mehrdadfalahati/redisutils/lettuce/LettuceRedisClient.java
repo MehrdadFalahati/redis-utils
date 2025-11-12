@@ -2,8 +2,7 @@ package com.github.mehrdadfalahati.redisutils.lettuce;
 
 import com.github.mehrdadfalahati.redisutils.client.RedisClient;
 import com.github.mehrdadfalahati.redisutils.exception.RedisConnectionException;
-import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
-import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
+import com.github.mehrdadfalahati.redisutils.operations.*;
 import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,15 +18,27 @@ public class LettuceRedisClient implements RedisClient {
 
     private final RedisKeyOperations keyOperations;
     private final RedisValueOperations valueOperations;
+    private final RedisHashOperations hashOperations;
+    private final RedisListOperations listOperations;
+    private final RedisSetOperations setOperations;
+    private final RedisZSetOperations zSetOperations;
     private final StatefulRedisConnection<String, Object> connection;
     private volatile boolean closed = false;
 
     public LettuceRedisClient(
             RedisKeyOperations keyOperations,
             RedisValueOperations valueOperations,
+            RedisHashOperations hashOperations,
+            RedisListOperations listOperations,
+            RedisSetOperations setOperations,
+            RedisZSetOperations zSetOperations,
             StatefulRedisConnection<String, Object> connection) {
         this.keyOperations = keyOperations;
         this.valueOperations = valueOperations;
+        this.hashOperations = hashOperations;
+        this.listOperations = listOperations;
+        this.setOperations = setOperations;
+        this.zSetOperations = zSetOperations;
         this.connection = connection;
     }
 
@@ -41,6 +52,30 @@ public class LettuceRedisClient implements RedisClient {
     public RedisValueOperations valueOps() {
         ensureNotClosed();
         return valueOperations;
+    }
+
+    @Override
+    public RedisHashOperations opsForHash() {
+        ensureNotClosed();
+        return hashOperations;
+    }
+
+    @Override
+    public RedisListOperations opsForList() {
+        ensureNotClosed();
+        return listOperations;
+    }
+
+    @Override
+    public RedisSetOperations opsForSet() {
+        ensureNotClosed();
+        return setOperations;
+    }
+
+    @Override
+    public RedisZSetOperations opsForZSet() {
+        ensureNotClosed();
+        return zSetOperations;
     }
 
     @Override

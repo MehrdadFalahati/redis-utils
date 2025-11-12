@@ -1,7 +1,6 @@
 package com.github.mehrdadfalahati.redisutils.client;
 
-import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
-import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
+import com.github.mehrdadfalahati.redisutils.operations.*;
 
 /**
  * Unified Redis client interface abstracting the underlying implementation.
@@ -31,9 +30,42 @@ public interface RedisClient {
 
     /**
      * Get operations for Redis strings (simple key-value).
+     * Alias for opsForValue().
      * @return value operations instance
      */
     RedisValueOperations valueOps();
+
+    /**
+     * Get operations for Redis values (strings).
+     * @return value operations instance
+     */
+    default RedisValueOperations opsForValue() {
+        return valueOps();
+    }
+
+    /**
+     * Get operations for Redis hashes.
+     * @return hash operations instance
+     */
+    RedisHashOperations opsForHash();
+
+    /**
+     * Get operations for Redis lists.
+     * @return list operations instance
+     */
+    RedisListOperations opsForList();
+
+    /**
+     * Get operations for Redis sets.
+     * @return set operations instance
+     */
+    RedisSetOperations opsForSet();
+
+    /**
+     * Get operations for Redis sorted sets (ZSets).
+     * @return sorted set operations instance
+     */
+    RedisZSetOperations opsForZSet();
 
     /**
      * Check if the client is connected and healthy.

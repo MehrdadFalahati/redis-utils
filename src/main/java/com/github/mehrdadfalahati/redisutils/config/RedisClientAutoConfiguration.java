@@ -4,9 +4,8 @@ import com.github.mehrdadfalahati.redisutils.client.RedisClient;
 import com.github.mehrdadfalahati.redisutils.client.RedisConnectionManager;
 import com.github.mehrdadfalahati.redisutils.lettuce.LettuceRedisClient;
 import com.github.mehrdadfalahati.redisutils.lettuce.LettuceStringOperations;
-import com.github.mehrdadfalahati.redisutils.operations.DefaultRedisKeyOperations;
-import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
-import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
+import com.github.mehrdadfalahati.redisutils.operations.*;
+import com.github.mehrdadfalahati.redisutils.operations.impl.*;
 import com.github.mehrdadfalahati.redisutils.util.RedisCommandExecutor;
 import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +56,54 @@ public class RedisClientAutoConfiguration {
     }
 
     /**
+     * Create Redis hash operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisHashOperations redisHashOperations(
+            org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        log.info("Creating DefaultRedisHashOperations");
+        return new DefaultRedisHashOperations(redisTemplate, objectMapper);
+    }
+
+    /**
+     * Create Redis list operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisListOperations redisListOperations(
+            org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        log.info("Creating DefaultRedisListOperations");
+        return new DefaultRedisListOperations(redisTemplate, objectMapper);
+    }
+
+    /**
+     * Create Redis set operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisSetOperations redisSetOperations(
+            org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        log.info("Creating DefaultRedisSetOperations");
+        return new DefaultRedisSetOperations(redisTemplate, objectMapper);
+    }
+
+    /**
+     * Create Redis sorted set (ZSet) operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisZSetOperations redisZSetOperations(
+            org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        log.info("Creating DefaultRedisZSetOperations");
+        return new DefaultRedisZSetOperations(redisTemplate, objectMapper);
+    }
+
+    /**
      * Create the unified Redis client facade.
      */
     @Bean
@@ -64,11 +111,23 @@ public class RedisClientAutoConfiguration {
     public RedisClient redisClient(
             RedisKeyOperations keyOperations,
             RedisValueOperations valueOperations,
+            RedisHashOperations hashOperations,
+            RedisListOperations listOperations,
+            RedisSetOperations setOperations,
+            RedisZSetOperations zSetOperations,
             RedisConnectionManager connectionManager) {
-        log.info("Creating LettuceRedisClient");
+        log.info("Creating LettuceRedisClient with all operation types");
 
         StatefulRedisConnection<String, Object> connection = connectionManager.getConnection();
-        return new LettuceRedisClient(keyOperations, valueOperations, connection);
+        return new LettuceRedisClient(
+                keyOperations,
+                valueOperations,
+                hashOperations,
+                listOperations,
+                setOperations,
+                zSetOperations,
+                connection
+        );
     }
 
     /**

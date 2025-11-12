@@ -1,7 +1,8 @@
-package com.github.mehrdadfalahati.redisutils.operations;
+package com.github.mehrdadfalahati.redisutils.operations.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mehrdadfalahati.redisutils.core.RedisKey;
+import com.github.mehrdadfalahati.redisutils.operations.RedisValueOperations;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;

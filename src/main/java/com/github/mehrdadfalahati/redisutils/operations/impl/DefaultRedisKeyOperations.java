@@ -1,8 +1,8 @@
-package com.github.mehrdadfalahati.redisutils.operations;
+package com.github.mehrdadfalahati.redisutils.operations.impl;
 
+import com.github.mehrdadfalahati.redisutils.operations.RedisKeyOperations;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Set;
